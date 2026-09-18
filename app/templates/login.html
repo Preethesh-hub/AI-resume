@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Register — Resume Analyzer</title>
+    <meta name="description" content="Login or register to Resume Analyzer.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           WARM DESIGN TOKENS
+        ═══════════════════════════════════════════ */
+        :root {
+            --bg-page: #faf7f4;
+            --bg-card: #ffffff;
+            --bg-upload: #fff5f0;
+            --bg-upload-hover: #ffede4;
+
+            --coral: #ff6b6b;
+            --coral-light: #ffe0e0;
+            --coral-dark: #e55a5a;
+            --lavender: #a78bfa;
+            --lavender-light: #ede9fe;
+            --teal: #2dd4bf;
+            --teal-light: #d5f5f0;
+            --peach: #fdba74;
+            --peach-light: #fff3e0;
+            --mint: #6ee7b7;
+            --mint-light: #ecfdf5;
+            --sky: #38bdf8;
+            --sky-light: #e0f2fe;
+
+            --text-dark: #2d2a26;
+            --text-body: #5c5650;
+            --text-light: #9b9389;
+            --text-faint: #c4bbb2;
+
+            --border: #eee6df;
+            --border-light: #f5efea;
+
+            --shadow-soft: 0 2px 12px rgba(45, 42, 38, 0.06);
+            --shadow-card: 0 4px 20px rgba(45, 42, 38, 0.07);
+            --shadow-hover: 0 8px 30px rgba(45, 42, 38, 0.1);
+            --shadow-button: 0 4px 14px rgba(255, 107, 107, 0.3);
+
+            --radius: 18px;
+            --radius-lg: 24px;
+            --radius-pill: 50px;
+        }
+
+        /* ═══════════════════════════════════════════
+           RESET & BASE
+        ═══════════════════════════════════════════ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.65;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 500px; height: 500px;
+            background: var(--coral-light);
+            top: -120px; right: -100px;
+        }
+
+        body::after {
+            width: 450px; height: 450px;
+            background: var(--lavender-light);
+            bottom: -100px; left: -80px;
+        }
+
+        /* ═══════════════════════════════════════════
+           TOP BAR
+        ═══════════════════════════════════════════ */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 36px; height: 60px;
+            background: rgba(250, 247, 244, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .topbar-brand {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none;
+        }
+
+        .topbar-icon { font-size: 1.5rem; }
+
+        .topbar-name {
+            font-size: 1.05rem; font-weight: 800; color: var(--text-dark);
+        }
+
+        .topbar-tag {
+            font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            background: var(--lavender-light); color: var(--lavender);
+        }
+
+        /* ═══════════════════════════════════════════
+           CONTAINER
+        ═══════════════════════════════════════════ */
+        .container {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 460px; margin: auto;
+            padding: 40px 28px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: center;
+        }
+
+        /* ═══════════════════════════════════════════
+           GREETING
+        ═══════════════════════════════════════════ */
+        .greeting { text-align: center; margin-bottom: 28px; }
+
+        .greeting h1 {
+            font-size: 2.2rem; font-weight: 800;
+            color: var(--text-dark); margin-bottom: 8px;
+        }
+
+        .greeting p {
+            color: var(--text-light); font-size: 1.05rem;
+            max-width: 460px; margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           MODE TABS
+        ═══════════════════════════════════════════ */
+        .mode-tabs {
+            display: flex; justify-content: center;
+            gap: 8px; margin-bottom: 28px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px 24px; border: 2px solid var(--border);
+            border-radius: var(--radius-pill);
+            background: var(--bg-card); color: var(--text-body);
+            font-family: inherit; font-size: 0.92rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+        }
+
+        .mode-tab:hover {
+            border-color: var(--lavender); color: var(--lavender);
+        }
+
+        .mode-tab.active {
+            background: var(--lavender); color: white;
+            border-color: var(--lavender);
+            box-shadow: 0 4px 14px rgba(167, 139, 250, 0.3);
+        }
+
+        /* ═══════════════════════════════════════════
+           CARD
+        ═══════════════════════════════════════════ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-card);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover { box-shadow: var(--shadow-hover); }
+
+        .card-label {
+            font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 22px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+
+        .card-label .emoji { font-size: 1.1rem; }
+        .card-label.coral { color: var(--coral); }
+        .card-label.lavender { color: var(--lavender); }
+
+        /* ═══════════════════════════════════════════
+           FORM ELEMENTS
+        ═══════════════════════════════════════════ */
+        .field-label {
+            display: block; font-weight: 700; font-size: 0.88rem;
+            color: var(--text-dark); margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            background: #fdfcfb;
+            border: 1.5px solid var(--border);
+            border-radius: 14px; padding: 14px 16px;
+            color: var(--text-dark); font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 18px;
+        }
+
+        .input-field:focus {
+            outline: none; border-color: var(--lavender);
+            box-shadow: 0 0 0 3px var(--lavender-light);
+        }
+
+        .input-field::placeholder { color: var(--text-faint); }
+
+        /* ═══════════════════════════════════════════
+           BUTTONS
+        ═══════════════════════════════════════════ */
+        .btn-submit {
+            width: 100%; padding: 15px 24px;
+            border: none; border-radius: var(--radius-pill);
+            background: var(--coral); color: white;
+            font-family: inherit; font-size: 1.05rem; font-weight: 800;
+            cursor: pointer; margin-top: 10px;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-button);
+            display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: var(--coral-dark); transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 107, 0.35);
+        }
+
+        .btn-submit:active { transform: translateY(0); }
+
+        /* ═══════════════════════════════════════════
+           LOADING SPINNER
+        ═══════════════════════════════════════════ */
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn-submit.loading .spinner {
+            display: inline-block;
+        }
+
+        .btn-submit.loading .btn-text {
+            opacity: 0.8;
+        }
+
+        /* ═══════════════════════════════════════════
+           TOAST
+        ═══════════════════════════════════════════ */
+        .toast {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            padding: 14px 24px; border-radius: var(--radius-pill);
+            box-shadow: var(--shadow-hover);
+            border: 1px solid var(--border);
+            font-size: 0.95rem; font-weight: 600; color: var(--text-dark);
+            display: flex; align-items: center; gap: 10px;
+            z-index: 1000; opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error { border-color: var(--coral); color: var(--coral-dark); }
+        .toast.success { border-color: var(--teal); color: #059669; }
+
+        @media (max-width: 600px) {
+            .topbar { padding: 0 18px; }
+            .container { padding: 24px 16px; }
+            .greeting h1 { font-size: 1.8rem; }
+        }
+    
+        /* ═══════════════════════════════════════════
+           DARK MODE TOKENS
+        ═══════════════════════════════════════════ */
+        body.dark-mode {
+            --bg-page: #121212;
+            --bg-card: #1e1e1e;
+            --bg-upload: #2d2d2d;
+            --bg-upload-hover: #3d3d3d;
+            --text-dark: #f0f0f0;
+            --text-body: #d1d1d1;
+            --text-light: #a0a0a0;
+            --border: #333333;
+            --border-light: #444444;
+            --shadow-card: 0 4px 20px rgba(0,0,0,0.4);
+            --lavender-light: #3b2f5b;
+            --mint-light: #1c3d31;
+            --peach-light: #4d2b15;
+            --sky-light: #163d53;
+            --coral-light: #521c1c;
+            --teal-light: #16403a;
+        }
+        .dark-mode .topbar { background: rgba(30, 30, 30, 0.85); }
+        .dark-mode input, .dark-mode select, .dark-mode textarea { background: #2a2a2a; color: #fff; border-color: #444; }
+        .dark-mode th, .dark-mode td { border-color: #444; }
+</style>
+</head>
+<body>
+    
+
+    <nav class="topbar">
+        <a href="/" class="topbar-brand">
+            <span class="topbar-icon">📝</span>
+            <span class="topbar-name">Resume Analyzer</span>
+        </a>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            <button class="theme-toggle" onclick="toggleTheme()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 10px;">🌙</button>
+            <a href="/" style="text-decoration: none; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); transition: color 0.2s;" onmouseover="this.style.color='var(--lavender)'" onmouseout="this.style.color='var(--text-dark)'">Back to Home</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Greeting -->
+        <header class="greeting">
+            <h1 id="greeting-title">Welcome Back! <span style="font-size: 0.8em">✨</span></h1>
+            <p id="greeting-subtitle">Sign in to access your dashboard and analyze more resumes.</p>
+        </header>
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-login" onclick="switchMode('login')">🔑 Sign In</button>
+            <button class="mode-tab" id="tab-register" onclick="switchMode('register')">👋 Create Account</button>
+        </div>
+
+        <div class="card" id="auth-card">
+            <div class="card-label lavender" id="card-label"><span class="emoji">🔒</span> Secure Login</div>
+
+            <form id="auth-form" onsubmit="submitForm(event)">
+                <label class="field-label" for="auth-username">👤 Username</label>
+                <input type="text" id="auth-username" class="input-field" placeholder="Enter your username" required autocomplete="username">
+                
+                <label class="field-label" for="auth-password">🔑 Password</label>
+                <input type="password" id="auth-password" class="input-field" placeholder="Enter your password" required autocomplete="current-password">
+
+                <button type="submit" class="btn-submit" id="submit-btn">
+                    <span class="spinner"></span>
+                    <span class="btn-text" id="submit-text">Sign In</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <span id="toast-icon">⚠️</span>
+        <span id="toast-message"></span>
+    </div>
+
+    <script>
+        let currentMode = 'login'; // 'login' or 'register'
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update tabs
+            document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+            
+            // Update UI text
+            const title = document.getElementById('greeting-title');
+            const subtitle = document.getElementById('greeting-subtitle');
+            const cardLabel = document.getElementById('card-label');
+            const submitText = document.getElementById('submit-text');
+            
+            if (mode === 'login') {
+                title.innerHTML = 'Welcome Back! <span style="font-size: 0.8em">✨</span>';
+                subtitle.textContent = 'Sign in to access your dashboard and analyze more resumes.';
+                cardLabel.innerHTML = '<span class="emoji">🔒</span> Secure Login';
+                submitText.textContent = 'Sign In';
+            } else {
+                title.innerHTML = 'Join Us! <span style="font-size: 0.8em">🚀</span>';
+                subtitle.textContent = 'Create an account to save your resume analysis history.';
+                cardLabel.innerHTML = '<span class="emoji">📝</span> Registration';
+                submitText.textContent = 'Create Account';
+            }
+        }
+
+        function showToast(message, type = 'error') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toast.className = `toast ${type}`;
+            toastMsg.textContent = message;
+            toastIcon.textContent = type === 'success' ? '✅' : '⚠️';
+            
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
+        async function submitForm(e) {
+            e.preventDefault();
+            
+            const usernameInput = document.getElementById('auth-username');
+            const passwordInput = document.getElementById('auth-password');
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!username || !password) {
+                showToast("Please enter both username and password.", 'error');
+                if(!username) usernameInput.focus();
+                else passwordInput.focus();
+                return;
+            }
+            
+            const btn = document.getElementById('submit-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            
+            try {
+                let url = currentMode === 'login' ? '/api/login' : '/register';
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    showToast(data.detail || "Authentication failed", 'error');
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    return;
+                }
+                
+                if (currentMode === 'register') {
+                    showToast("Account created successfully! You can now sign in.", 'success');
+                    passwordInput.value = '';
+                    switchMode('login');
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    return;
+                }
+                
+                // On Login
+                localStorage.setItem('access_token', data.access_token);
+                document.cookie = "access_token=" + data.access_token + "; path=/";
+                
+                showToast("Signed in successfully. Redirecting...", 'success');
+                
+                // Redirect
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 800);
+                
+            } catch (err) {
+                showToast("Network error. Please try again.", 'error');
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+    </script>
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = isDark ? '☀️' : '🌙';
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            const toggle = document.querySelector('.theme-toggle');
+            if (toggle) toggle.textContent = '☀️';
+        }
+    </script>
+</body>
+</html>

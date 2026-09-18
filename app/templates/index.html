@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer — Check Your Resume Fit</title>
+    <meta name="description" content="A friendly AI tool that checks how well your resume matches a job description and gives you helpful tips.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════════
+           WARM DESIGN TOKENS
+        ═══════════════════════════════════════════ */
+        :root {
+            --bg-page: #faf7f4;
+            --bg-card: #ffffff;
+            --bg-upload: #fff5f0;
+            --bg-upload-hover: #ffede4;
+
+            --coral: #ff6b6b;
+            --coral-light: #ffe0e0;
+            --coral-dark: #e55a5a;
+            --lavender: #a78bfa;
+            --lavender-light: #ede9fe;
+            --teal: #2dd4bf;
+            --teal-light: #d5f5f0;
+            --peach: #fdba74;
+            --peach-light: #fff3e0;
+            --mint: #6ee7b7;
+            --mint-light: #ecfdf5;
+            --sky: #38bdf8;
+            --sky-light: #e0f2fe;
+
+            --text-dark: #2d2a26;
+            --text-body: #5c5650;
+            --text-light: #9b9389;
+            --text-faint: #c4bbb2;
+
+            --border: #eee6df;
+            --border-light: #f5efea;
+
+            --shadow-soft: 0 2px 12px rgba(45, 42, 38, 0.06);
+            --shadow-card: 0 4px 20px rgba(45, 42, 38, 0.07);
+            --shadow-hover: 0 8px 30px rgba(45, 42, 38, 0.1);
+            --shadow-button: 0 4px 14px rgba(255, 107, 107, 0.3);
+
+            --radius: 18px;
+            --radius-lg: 24px;
+            --radius-pill: 50px;
+        }
+
+
+        /* ═══════════════════════════════════════════
+           DARK MODE TOKENS
+        ═══════════════════════════════════════════ */
+        body.dark-mode {
+            --bg-page: #121212;
+            --bg-card: #1e1e1e;
+            --bg-upload: #2d2d2d;
+            --bg-upload-hover: #3d3d3d;
+            --text-dark: #f0f0f0;
+            --text-body: #d1d1d1;
+            --text-light: #a0a0a0;
+            --border: #333333;
+            --border-light: #444444;
+            --shadow-card: 0 4px 20px rgba(0,0,0,0.4);
+            --lavender-light: #3b2f5b;
+            --mint-light: #1c3d31;
+            --peach-light: #4d2b15;
+            --sky-light: #163d53;
+            --coral-light: #521c1c;
+            --teal-light: #16403a;
+        }
+        .dark-mode .topbar { background: rgba(30, 30, 30, 0.85); }
+        .dark-mode .textarea, .dark-mode .jd-entry-input, .dark-mode .jd-entry { background: #252525; color: #f0f0f0; }
+        .theme-toggle { background:none; border:none; cursor:pointer; font-size:1.2rem; }
+
+        /* ═══════════════════════════════════════════
+           RESET & BASE
+        ═══════════════════════════════════════════ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.65;
+            min-height: 100vh;
+        }
+
+        body::before, body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 500px; height: 500px;
+            background: var(--coral-light);
+            top: -120px; right: -100px;
+        }
+
+        body::after {
+            width: 450px; height: 450px;
+            background: var(--lavender-light);
+            bottom: -100px; left: -80px;
+        }
+
+        /* ═══════════════════════════════════════════
+           TOP BAR
+        ═══════════════════════════════════════════ */
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 36px; height: 60px;
+            background: rgba(250, 247, 244, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .topbar-brand {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none;
+        }
+
+        .topbar-icon { font-size: 1.5rem; }
+
+        .topbar-name {
+            font-size: 1.05rem; font-weight: 800; color: var(--text-dark);
+        }
+
+        .topbar-tag {
+            font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+            border-radius: var(--radius-pill);
+            background: var(--lavender-light); color: var(--lavender);
+        }
+
+        /* ═══════════════════════════════════════════
+           CONTAINER
+        ═══════════════════════════════════════════ */
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1100px; margin: 0 auto;
+            padding: 40px 28px 80px;
+        }
+
+        /* ═══════════════════════════════════════════
+           GREETING
+        ═══════════════════════════════════════════ */
+        .greeting { text-align: center; margin-bottom: 28px; }
+
+        .greeting h1 {
+            font-size: 2.2rem; font-weight: 800;
+            color: var(--text-dark); margin-bottom: 8px;
+        }
+
+        .greeting h1 .wave {
+            display: inline-block;
+            animation: waveHand 2.5s ease-in-out infinite;
+            transform-origin: 70% 70%;
+        }
+
+        @keyframes waveHand {
+            0%, 100% { transform: rotate(0deg); }
+            10% { transform: rotate(14deg); }
+            20% { transform: rotate(-8deg); }
+            30% { transform: rotate(14deg); }
+            40% { transform: rotate(-4deg); }
+            50% { transform: rotate(10deg); }
+            60% { transform: rotate(0deg); }
+        }
+
+        .greeting p {
+            color: var(--text-light); font-size: 1.05rem;
+            max-width: 460px; margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           MODE TABS
+        ═══════════════════════════════════════════ */
+        .mode-tabs {
+            display: flex; justify-content: center;
+            gap: 8px; margin-bottom: 28px;
+        }
+
+        .mode-tab {
+            padding: 10px 24px; border: 2px solid var(--border);
+            border-radius: var(--radius-pill);
+            background: var(--bg-card); color: var(--text-body);
+            font-family: inherit; font-size: 0.92rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+        }
+
+        .mode-tab:hover {
+            border-color: var(--lavender); color: var(--lavender);
+        }
+
+        .mode-tab.active {
+            background: var(--lavender); color: white;
+            border-color: var(--lavender);
+            box-shadow: 0 4px 14px rgba(167, 139, 250, 0.3);
+        }
+
+        /* ═══════════════════════════════════════════
+           LAYOUT
+        ═══════════════════════════════════════════ */
+        .layout {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 28px; align-items: start;
+        }
+
+        .single-col {
+            grid-template-columns: 1fr;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* ═══════════════════════════════════════════
+           CARD
+        ═══════════════════════════════════════════ */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .card:hover { box-shadow: var(--shadow-hover); }
+
+        .card-label {
+            font-size: 0.75rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            margin-bottom: 18px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .card-label .emoji { font-size: 1.1rem; }
+        .card-label.coral { color: var(--coral); }
+        .card-label.lavender { color: var(--lavender); }
+        .card-label.teal { color: var(--teal); }
+        .card-label.peach { color: #e8913a; }
+        .card-label.sky { color: var(--sky); }
+
+        /* ═══════════════════════════════════════════
+           UPLOAD AREA
+        ═══════════════════════════════════════════ */
+        .upload-area {
+            position: relative;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 32px 20px; text-align: center;
+            cursor: pointer; transition: all 0.3s ease;
+            background: var(--bg-upload); margin-bottom: 22px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--coral); background: var(--bg-upload-hover);
+            transform: translateY(-2px);
+        }
+
+        .upload-area.has-file {
+            border-color: var(--teal); background: var(--teal-light);
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute; inset: 0; opacity: 0; cursor: pointer;
+        }
+
+        .upload-illustration {
+            font-size: 2.8rem; margin-bottom: 10px;
+            animation: gentleBounce 3s ease-in-out infinite;
+        }
+
+        @keyframes gentleBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .upload-text { font-weight: 700; font-size: 1rem; color: var(--text-dark); margin-bottom: 4px; }
+        .upload-subtext { font-size: 0.85rem; color: var(--text-light); }
+
+        .upload-file-name {
+            display: none; margin-top: 10px;
+            font-size: 0.9rem; color: #059669; font-weight: 700;
+        }
+        .upload-file-name.visible { display: block; }
+
+        /* ═══════════════════════════════════════════
+           FORM ELEMENTS
+        ═══════════════════════════════════════════ */
+        .field-label {
+            display: block; font-weight: 700; font-size: 0.88rem;
+            color: var(--text-dark); margin-bottom: 8px;
+        }
+
+        .textarea {
+            width: 100%; min-height: 160px;
+            background: #fdfcfb;
+            border: 1.5px solid var(--border);
+            border-radius: 14px; padding: 14px 16px;
+            color: var(--text-dark); font-family: inherit;
+            font-size: 0.95rem; resize: vertical;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            line-height: 1.7;
+        }
+
+        .textarea:focus {
+            outline: none; border-color: var(--lavender);
+            box-shadow: 0 0 0 3px var(--lavender-light);
+        }
+
+        .textarea::placeholder { color: var(--text-faint); }
+
+        /* ═══════════════════════════════════════════
+           BUTTONS
+        ═══════════════════════════════════════════ */
+        .btn-submit {
+            width: 100%; padding: 15px 24px;
+            border: none; border-radius: var(--radius-pill);
+            background: var(--coral); color: white;
+            font-family: inherit; font-size: 1.05rem; font-weight: 800;
+            cursor: pointer; margin-top: 22px;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-button);
+        }
+
+        .btn-submit:hover {
+            background: var(--coral-dark); transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 107, 107, 0.35);
+        }
+
+        .btn-submit:active { transform: translateY(0); }
+
+        .btn-submit:disabled {
+            opacity: 0.55; cursor: not-allowed; transform: none;
+        }
+
+        .btn-inner {
+            display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+        }
+
+        .btn-add-jd {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 18px; border: 2px dashed var(--border);
+            border-radius: var(--radius-pill);
+            background: transparent; color: var(--text-light);
+            font-family: inherit; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: all 0.25s ease;
+            margin-top: 12px;
+        }
+
+        .btn-add-jd:hover {
+            border-color: var(--lavender); color: var(--lavender);
+            background: var(--lavender-light);
+        }
+
+        .btn-remove-jd {
+            position: absolute; top: 8px; right: 8px;
+            width: 28px; height: 28px;
+            border: none; border-radius: 50%;
+            background: var(--coral-light); color: var(--coral);
+            font-size: 1rem; font-weight: 700;
+            cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .btn-remove-jd:hover {
+            background: var(--coral); color: white;
+        }
+
+        /* ═══════════════════════════════════════════
+           LOADING
+        ═══════════════════════════════════════════ */
+        .loading-area { display: none; margin-top: 22px; text-align: center; }
+        .loading-area.active { display: block; }
+
+        .loading-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; }
+
+        .loading-dots span {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--coral);
+            animation: dotBounce 1.4s ease-in-out infinite;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        .loading-msg { font-size: 0.88rem; color: var(--text-light); font-weight: 600; }
+
+        /* ═══════════════════════════════════════════
+           PLACEHOLDER
+        ═══════════════════════════════════════════ */
+        .placeholder-card {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 60px 32px; gap: 16px;
+        }
+
+        .placeholder-card .big-emoji {
+            font-size: 3rem;
+            animation: gentleBounce 3s ease-in-out infinite;
+        }
+
+        .placeholder-card h3 { font-size: 1.15rem; font-weight: 700; color: var(--text-dark); }
+        .placeholder-card p { color: var(--text-light); font-size: 0.9rem; max-width: 260px; }
+
+        /* ═══════════════════════════════════════════
+           RESULTS
+        ═══════════════════════════════════════════ */
+        .results-col {
+            display: none; flex-direction: column; gap: 22px;
+            animation: softFadeIn 0.5s ease forwards;
+        }
+        .results-col.visible { display: flex; }
+
+        @keyframes softFadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Score section */
+        .score-section { display: flex; align-items: center; gap: 28px; }
+
+        .score-circle-wrap {
+            position: relative; width: 140px; height: 140px; flex-shrink: 0;
+        }
+
+        .score-svg { width: 140px; height: 140px; transform: rotate(-90deg); }
+
+        .score-track { fill: none; stroke: var(--border-light); stroke-width: 10; }
+
+        .score-fill {
+            fill: none; stroke-width: 10; stroke-linecap: round;
+            transition: stroke-dasharray 1s ease;
+        }
+
+        .score-center {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+
+        .score-number { font-size: 2rem; font-weight: 800; color: var(--text-dark); line-height: 1; }
+        .score-word { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-light); margin-top: 3px; }
+        .score-face { font-size: 1.2rem; margin-top: 2px; }
+
+        /* Sub bars */
+        .sub-bars { flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .sub-bar { display: flex; flex-direction: column; gap: 5px; }
+        .sub-bar-top { display: flex; justify-content: space-between; font-size: 0.84rem; }
+        .sub-bar-name { font-weight: 600; color: var(--text-body); }
+        .sub-bar-val { font-weight: 800; color: var(--text-dark); }
+
+        .sub-bar-track {
+            height: 10px; background: var(--border-light);
+            border-radius: 5px; overflow: hidden;
+        }
+
+        .sub-bar-fill {
+            height: 100%; border-radius: 5px;
+            transition: width 0.8s ease;
+        }
+
+        .sub-bar-fill.coral { background: var(--coral); }
+        .sub-bar-fill.lavender { background: var(--lavender); }
+        .sub-bar-fill.teal { background: var(--teal); }
+
+        /* Skills */
+        .skills-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .skill-group-title {
+            font-size: 0.78rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .skill-group-title.good { color: #059669; }
+        .skill-group-title.gap { color: var(--coral); }
+
+        .pills-area { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .pill {
+            padding: 5px 14px; border-radius: var(--radius-pill);
+            font-size: 0.82rem; font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .pill:hover { transform: translateY(-1px); }
+
+        .pill.match { background: var(--mint-light); color: #059669; border: 1px solid #a7f3d0; }
+        .pill.miss { background: var(--peach-light); color: #c2410c; border: 1px solid #fed7aa; }
+
+        .no-items { font-size: 0.85rem; color: var(--text-light); font-style: italic; }
+
+        /* Suggestions */
+        .tips-list {
+            list-style: none; display: flex;
+            flex-direction: column; gap: 10px;
+        }
+
+        .tips-list li {
+            padding: 13px 16px; background: var(--peach-light);
+            border-radius: 14px; border-left: 4px solid var(--peach);
+            font-size: 0.9rem; color: var(--text-body); line-height: 1.6;
+            transition: background 0.2s ease;
+        }
+
+        .tips-list li:hover { background: #fff0dd; }
+
+        /* ═══════════════════════════════════════════
+           ATS SCORE CARD
+        ═══════════════════════════════════════════ */
+        .ats-header {
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .ats-score-badge {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; font-weight: 800; color: white;
+            flex-shrink: 0;
+        }
+
+        .ats-score-badge.good { background: linear-gradient(135deg, #10b981, #6ee7b7); }
+        .ats-score-badge.ok { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+        .ats-score-badge.bad { background: linear-gradient(135deg, #ef4444, #fca5a5); }
+
+        .ats-header-text h3 {
+            font-size: 1rem; font-weight: 800; color: var(--text-dark);
+        }
+
+        .ats-header-text p {
+            font-size: 0.85rem; color: var(--text-light);
+        }
+
+        .ats-checks-list {
+            list-style: none;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .ats-check-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.88rem; line-height: 1.5;
+            transition: background 0.2s ease;
+        }
+
+        .ats-check-item:hover { background: rgba(0,0,0,0.02); }
+
+        .ats-check-icon {
+            flex-shrink: 0; width: 22px; height: 22px;
+            border-radius: 50%; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 0.7rem; font-weight: 800; margin-top: 1px;
+        }
+
+        .ats-check-icon.pass { background: var(--mint-light); color: #059669; }
+        .ats-check-icon.fail { background: var(--coral-light); color: var(--coral); }
+
+        .ats-check-name { font-weight: 700; color: var(--text-dark); }
+        .ats-check-detail { color: var(--text-light); font-size: 0.82rem; }
+
+        /* ═══════════════════════════════════════════
+           AI REWRITE CARD
+        ═══════════════════════════════════════════ */
+        .rewrite-list {
+            list-style: none;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+
+        .rewrite-list li {
+            padding: 14px 16px;
+            background: var(--sky-light);
+            border-radius: 14px;
+            border-left: 4px solid var(--sky);
+            font-size: 0.9rem; color: var(--text-body);
+            line-height: 1.7;
+            transition: background 0.2s ease;
+        }
+
+        .rewrite-list li:hover { background: #d4edfc; }
+
+        .rewrite-empty {
+            text-align: center; padding: 24px;
+            color: var(--text-light); font-size: 0.9rem;
+        }
+
+        /* ═══════════════════════════════════════════
+           AI INSIGHTS CARD
+        ═══════════════════════════════════════════ */
+        .ai-card {
+            background: var(--lavender-light);
+            border: 1px solid #ddd6fe;
+            border-radius: var(--radius-lg);
+            padding: 22px 24px; display: none;
+        }
+        .ai-card.visible { display: block; animation: softFadeIn 0.4s ease forwards; }
+
+        .ai-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.7rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--lavender);
+            background: rgba(167, 139, 250, 0.15);
+            padding: 4px 12px; border-radius: var(--radius-pill);
+            margin-bottom: 12px;
+        }
+
+        .ai-text { font-size: 0.92rem; line-height: 1.8; color: var(--text-body); }
+
+        /* ═══════════════════════════════════════════
+           COMPARE MODE
+        ═══════════════════════════════════════════ */
+        .compare-section { display: none; }
+        .compare-section.visible { display: block; }
+
+        .jd-entry {
+            position: relative;
+            margin-bottom: 18px;
+            padding: 18px;
+            background: #fdfcfb;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+
+        .jd-entry-label {
+            display: block; font-weight: 700; font-size: 0.85rem;
+            color: var(--text-dark); margin-bottom: 6px;
+        }
+
+        .jd-entry-input {
+            width: 100%; padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px; font-family: inherit;
+            font-size: 0.9rem; color: var(--text-dark);
+            margin-bottom: 10px; background: white;
+            transition: border-color 0.2s ease;
+        }
+
+        .jd-entry-input:focus {
+            outline: none; border-color: var(--lavender);
+        }
+
+        .jd-entry .textarea {
+            min-height: 100px;
+        }
+
+        /* Compare Results Table */
+        .compare-results { display: none; margin-top: 24px; }
+        .compare-results.visible { display: block; animation: softFadeIn 0.5s ease; }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            font-size: 0.88rem;
+        }
+
+        .compare-table thead th {
+            background: var(--lavender-light);
+            color: var(--lavender);
+            font-weight: 700; font-size: 0.78rem;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            padding: 14px 16px; text-align: left;
+        }
+
+        .compare-table tbody td {
+            padding: 14px 16px;
+            border-top: 1px solid var(--border-light);
+            color: var(--text-body);
+        }
+
+        .compare-table tbody tr:hover td {
+            background: rgba(167, 139, 250, 0.04);
+        }
+
+        .compare-table .rank-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 26px; height: 26px; border-radius: 50%;
+            font-size: 0.75rem; font-weight: 800;
+        }
+
+        .rank-1 { background: #fef3c7; color: #d97706; }
+        .rank-2 { background: #e5e7eb; color: #6b7280; }
+        .rank-3 { background: #fde8d8; color: #c2410c; }
+
+        .compare-score {
+            font-weight: 800; font-size: 1rem;
+        }
+
+        .compare-skills-pills {
+            display: flex; flex-wrap: wrap; gap: 4px;
+        }
+
+        .compare-skills-pills .mini-pill {
+            padding: 2px 8px; border-radius: 10px;
+            font-size: 0.72rem; font-weight: 600;
+        }
+
+        .mini-pill.match { background: var(--mint-light); color: #059669; }
+        .mini-pill.miss { background: var(--coral-light); color: var(--coral); }
+
+        /* ═══════════════════════════════════════════
+           FOOTER
+        ═══════════════════════════════════════════ */
+        .footer {
+            text-align: center; padding: 30px 20px 20px;
+            font-size: 0.8rem; color: var(--text-faint);
+        }
+
+        /* ═══════════════════════════════════════════
+           RESPONSIVE
+        ═══════════════════════════════════════════ */
+        @media (max-width: 800px) {
+            .layout { grid-template-columns: 1fr; }
+            .score-section { flex-direction: column; text-align: center; }
+            .skills-row { grid-template-columns: 1fr; }
+            .topbar { padding: 0 18px; }
+            .container { padding: 24px 16px 50px; }
+            .greeting h1 { font-size: 1.65rem; }
+            .compare-table { font-size: 0.78rem; }
+            .compare-table thead th, .compare-table tbody td { padding: 10px 8px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="topbar">
+        <a href="/" class="topbar-brand">
+            <span class="topbar-icon">📝</span>
+            <span class="topbar-name">Resume Analyzer</span>
+        </a>
+        <div style="display: flex; gap: 16px; align-items: center;">
+            
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">🌙</button>
+            <a href="/dashboard" style="text-decoration: none; font-size: 0.9rem; font-weight: 700; color: var(--text-dark); transition: color 0.2s;" onmouseover="this.style.color='var(--lavender)'" onmouseout="this.style.color='var(--text-dark)'">Recruiter Dashboard</a>
+            {% if user %}
+            <span style="font-size: 0.9rem; font-weight: 700;">Hi, {{ user.username }}</span>
+            <button onclick="logout()" style="background: none; border: none; font-size: 0.9rem; font-weight: 700; color: var(--coral); cursor: pointer;">Logout</button>
+            {% else %}
+            <button onclick="window.location.href='/login'" style="background: var(--lavender); color: white; border: none; padding: 6px 14px; border-radius: 12px; font-weight: 700; cursor: pointer;">Login</button>
+            {% endif %}
+            <span class="topbar-tag">✦ AI-Powered</span>
+        </div>
+    </nav>
+
+    <div class="container">
+
+        <!-- Greeting -->
+        <header class="greeting">
+            <h1>Let's check your resume! <span class="wave">👋</span></h1>
+            <p>Upload your resume, paste a job description, and we'll show you how well you match.</p>
+        </header>
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">🔍 Single Check</button>
+            <button class="mode-tab" id="tab-compare" onclick="switchMode('compare')">📋 Compare Jobs</button>
+            <button class="mode-tab" id="tab-linkedin" onclick="switchMode('linkedin')">🌐 LinkedIn Optimizer</button>
+        </div>
+
+        <!-- ════════════════════════════════════════════════
+             SINGLE MODE
+        ════════════════════════════════════════════════ -->
+        <div id="single-mode">
+            <div class="layout">
+                <!-- LEFT: INPUT -->
+                <div class="card" id="input-card">
+                    <div class="card-label coral"><span class="emoji">📁</span> Upload & Check</div>
+
+                    <form id="analyze-form">
+                        <div class="upload-area" id="upload-area">
+                            <input type="file" id="resume" name="resume" accept=".pdf,.docx,.txt" required>
+                            <div class="upload-illustration">📂</div>
+                            <div class="upload-text">Drop your resume here</div>
+                            <div class="upload-subtext">or click to browse — PDF, DOCX, TXT</div>
+                            <div class="upload-file-name" id="upload-file-name"></div>
+                        </div>
+
+                        
+                        <label class="field-label" for="jd_url">🔗 Auto-Fetch Job Description (Optional)</label>
+                        <div style="display:flex; gap:10px; margin-bottom:20px;">
+                            <input type="url" id="jd_url" class="textarea" style="min-height: 40px; padding:10px; margin-bottom:0;" placeholder="Paste Indeed, Greenhouse, or Company URL...">
+                            <button type="button" class="btn-submit" id="btn-fetch-jd" style="margin-top:0; padding:10px 20px; white-space:nowrap; border-radius:12px; width:auto; font-size:1rem;">Fetch Text</button>
+                        </div>
+
+                        <label class="field-label" for="job_description">✍️ Paste the Job Description</label>
+                        <textarea class="textarea" id="job_description" name="job_description" required
+                            placeholder="Paste the full job description here so we can compare it with your resume…"></textarea>
+
+                        <button type="submit" class="btn-submit" id="submit-btn">
+                            <span class="btn-inner">🔍 Check My Resume</span>
+                        </button>
+
+                        <div class="loading-area" id="loader">
+                            <div class="loading-dots"><span></span><span></span><span></span></div>
+                            <div class="loading-msg">Reading through your resume…</div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- RIGHT: PLACEHOLDER -->
+                <div class="card placeholder-card" id="placeholder-card">
+                    <div class="big-emoji">🎯</div>
+                    <h3>Your results will show up here</h3>
+                    <p>Upload your resume and paste a job description to get started!</p>
+                </div>
+
+                <!-- RIGHT: RESULTS -->
+                <div class="results-col" id="results-col">
+
+                    <!-- Score -->
+                    <div class="card" id="score-card">
+                        <div class="card-label lavender"><span class="emoji">📊</span> Your Match Score</div>
+                        <div class="score-section">
+                            <div class="score-circle-wrap">
+                                <svg class="score-svg" viewBox="0 0 120 120">
+                                    <defs>
+                                        <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stop-color="#ff6b6b"/>
+                                            <stop offset="100%" stop-color="#a78bfa"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <circle class="score-track" cx="60" cy="60" r="50"/>
+                                    <circle class="score-fill" id="score-circle" cx="60" cy="60" r="50"
+                                        stroke="url(#scoreGrad)" stroke-dasharray="0 314"/>
+                                </svg>
+                                <div class="score-center">
+                                    <div class="score-number" id="total-score">0%</div>
+                                    <div class="score-word">match</div>
+                                    <div class="score-face" id="score-face">😊</div>
+                                </div>
+                            </div>
+                            <div class="sub-bars">
+                                <div class="sub-bar">
+                                    <div class="sub-bar-top">
+                                        <span class="sub-bar-name">Skills</span>
+                                        <span class="sub-bar-val" id="skill-score">0%</span>
+                                    </div>
+                                    <div class="sub-bar-track"><div class="sub-bar-fill coral" id="skill-bar" style="width:0%"></div></div>
+                                </div>
+                                <div class="sub-bar">
+                                    <div class="sub-bar-top">
+                                        <span class="sub-bar-name">Experience</span>
+                                        <span class="sub-bar-val" id="exp-score">0%</span>
+                                    </div>
+                                    <div class="sub-bar-track"><div class="sub-bar-fill lavender" id="exp-bar" style="width:0%"></div></div>
+                                </div>
+                                <div class="sub-bar">
+                                    <div class="sub-bar-top">
+                                        <span class="sub-bar-name">Education</span>
+                                        <span class="sub-bar-val" id="edu-score">0%</span>
+                                    </div>
+                                    <div class="sub-bar-track"><div class="sub-bar-fill teal" id="edu-bar" style="width:0%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ATS Score -->
+                    <div class="card" id="ats-card" style="display:none;">
+                        <div class="card-label teal"><span class="emoji">🤖</span> ATS Friendliness</div>
+                        <div class="ats-header">
+                            <div class="ats-score-badge" id="ats-badge">0</div>
+                            <div class="ats-header-text">
+                                <h3 id="ats-title">Checking…</h3>
+                                <p id="ats-subtitle">How well ATS bots can read your resume</p>
+                            </div>
+                        </div>
+                        <ul class="ats-checks-list" id="ats-checks-list"></ul>
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="card" id="skills-card">
+                        <div class="card-label teal"><span class="emoji">🧩</span> Skills Breakdown</div>
+                        <div class="skills-row">
+                            <div>
+                                <div class="skill-group-title good">✅ Matched</div>
+                                <div class="pills-area" id="matched-skills"></div>
+                            </div>
+                            <div>
+                                <div class="skill-group-title gap">⚠️ Missing</div>
+                                <div class="pills-area" id="missing-skills"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suggestions -->
+                    <div class="card" id="suggestions-card">
+                        <div class="card-label peach"><span class="emoji">💡</span> Tips to Improve</div>
+                        <ul class="tips-list" id="suggestions"></ul>
+                    </div>
+
+
+                    <!-- Red Flags -->
+                    <div class="card" id="red-flags-card" style="display:none; margin-top:22px;">
+                        <div class="card-label" style="color:#ef4444; border-color:#ef4444; background:rgba(239, 68, 68, 0.1);">
+                            <span class="emoji">🚩</span> Job Description Red Flags
+                        </div>
+                        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:14px;">
+                            We detected some toxic corporate buzzwords in the job description:
+                        </p>
+                        <ul class="tips-list" id="red-flags-list" style="color:#ef4444;"></ul>
+                    </div>
+
+                    <!-- AI Rewrite Suggestions -->
+                    <div class="card" id="rewrite-card" style="display:none;">
+                        <div class="card-label sky"><span class="emoji">✍️</span> AI Resume Rewrites</div>
+                        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:14px;">
+                            Try adding or rewriting these bullet points to better match the job description:
+                        </p>
+                        <ul class="rewrite-list" id="rewrite-list"></ul>
+                    </div>
+
+                    
+                    <!-- Interview Questions -->
+                    <div class="card" id="interview-card" style="display:none; margin-top:22px;">
+                        <div class="card-label peach"><span class="emoji">🎤</span> Interview Predictor</div>
+                        <p style="font-size:0.85rem; color:var(--text-light); margin-bottom:14px;">
+                            Be prepared for these questions based on your experience gaps:
+                        </p>
+                        <ul class="rewrite-list" id="interview-list"></ul>
+                    </div>
+
+                    
+                    <!-- Action Buttons -->
+                    <div style="display:flex; gap:16px; margin-top:22px;" id="action-buttons">
+                        <button class="btn-add-jd" type="button" onclick="generateCoverLetter()" id="btn-cover-letter" style="margin-top:0; border-color:var(--lavender); color:var(--lavender);">✉️ Generate Cover Letter</button>
+                        <button class="btn-add-jd" type="button" onclick="exportResume()" id="btn-export-pdf" style="margin-top:0; border-color:var(--teal); color:var(--teal);">📄 Export to PDF</button>
+                    </div>
+                    
+                    <!-- Cover letter display -->
+                    <div class="card" id="cover-letter-card" style="display:none; margin-top:22px;">
+                        <div class="card-label lavender">Generated Cover Letter</div>
+                        <textarea class="textarea" id="cover-letter-text" style="min-height:300px;"></textarea>
+                    </div>
+
+                    <!-- AI Summary -->
+                    <div class="ai-card" id="llm-summary-container">
+                        <div class="ai-tag">✨ AI Insight</div>
+                        <p class="ai-text" id="llm-summary"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════════
+             COMPARE MODE
+        ════════════════════════════════════════════════ -->
+        <div id="compare-mode" style="display:none;">
+            <div class="layout single-col">
+                <div class="card">
+                    <div class="card-label lavender"><span class="emoji">📋</span> Compare Multiple Jobs</div>
+
+                    <form id="compare-form">
+                        <!-- Upload (shared) -->
+                        <div class="upload-area" id="upload-area-compare">
+                            <input type="file" id="resume-compare" name="resume" accept=".pdf,.docx,.txt" required>
+                            <div class="upload-illustration">📂</div>
+                            <div class="upload-text">Drop your resume here</div>
+                            <div class="upload-subtext">or click to browse — PDF, DOCX, TXT</div>
+                            <div class="upload-file-name" id="upload-file-name-compare"></div>
+                        </div>
+
+                        <!-- JD Entries -->
+                        <div id="jd-entries-container">
+                            <div class="jd-entry" data-index="0">
+                                <label class="jd-entry-label">🏢 Job 1 — Title</label>
+                                <input type="text" class="jd-entry-input jd-title" placeholder="e.g. Senior Backend Engineer at Google" value="">
+                                <textarea class="textarea jd-text" placeholder="Paste the job description…"></textarea>
+                            </div>
+                            <div class="jd-entry" data-index="1">
+                                <button type="button" class="btn-remove-jd" onclick="removeJD(this)" title="Remove">×</button>
+                                <label class="jd-entry-label">🏢 Job 2 — Title</label>
+                                <input type="text" class="jd-entry-input jd-title" placeholder="e.g. Full Stack Developer at Startup" value="">
+                                <textarea class="textarea jd-text" placeholder="Paste the job description…"></textarea>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-add-jd" id="btn-add-jd" onclick="addJD()">
+                            ＋ Add Another Job
+                        </button>
+
+                        <button type="submit" class="btn-submit" id="compare-submit-btn">
+                            <span class="btn-inner">📋 Compare All</span>
+                        </button>
+
+                        <div class="loading-area" id="compare-loader">
+                            <div class="loading-dots"><span></span><span></span><span></span></div>
+                            <div class="loading-msg">Comparing against all job descriptions…</div>
+                        </div>
+                    </form>
+
+                    <!-- Compare Results Table -->
+                    <div class="compare-results" id="compare-results">
+                        <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-dark); margin-bottom:16px;">
+                            🏆 Comparison Results
+                        </h3>
+                        <table class="compare-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Job Title</th>
+                                    <th>Match</th>
+                                    <th>Skills</th>
+                                    <th>Exp</th>
+                                    <th>Edu</th>
+                                    <th>Matched</th>
+                                    <th>Missing</th>
+                                </tr>
+                            </thead>
+                            <tbody id="compare-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+        <!-- ════════════════════════════════════════════════
+             LINKEDIN MODE
+        ════════════════════════════════════════════════ -->
+        <div id="linkedin-mode" style="display:none;">
+            <div class="layout single-col">
+                <div class="card">
+                    <div class="card-label sky"><span class="emoji">🌐</span> LinkedIn Profile Optimizer</div>
+                    <form id="linkedin-form">
+                        <label class="field-label">Target Role</label>
+                        <input type="text" class="jd-entry-input" id="li-role" name="target_role" placeholder="e.g. Senior Software Engineer" required>
+                        <label class="field-label" style="margin-top:16px;">Paste Your LinkedIn Text (About, Experience, etc.)</label>
+                        <textarea class="textarea" id="li-text" name="profile_text" placeholder="Copy and paste your LinkedIn profile text here..." required></textarea>
+                        
+                        <button type="submit" class="btn-submit" id="li-submit-btn">
+                            <span class="btn-inner">✨ Optimize Profile</span>
+                        </button>
+                        <div class="loading-area" id="li-loader">
+                            <div class="loading-dots"><span></span><span></span><span></span></div>
+                            <div class="loading-msg">Analyzing your profile...</div>
+                        </div>
+                    </form>
+                    
+                    <div id="li-results" style="display:none; margin-top:24px;">
+                        <h3 style="margin-bottom:12px; font-weight:800; color:var(--text-dark);">Suggested Headline</h3>
+                        <div class="card" style="background:var(--sky-light); border-color:var(--sky); margin-bottom:20px; padding:16px;">
+                            <p id="li-headline" style="font-weight:700; color:var(--text-dark);"></p>
+                        </div>
+                        <h3 style="margin-bottom:12px; font-weight:800; color:var(--text-dark);">Suggested About Section</h3>
+                        <div class="card" style="background:var(--mint-light); border-color:var(--mint); margin-bottom:20px; padding:16px;">
+                            <p id="li-about" style="white-space:pre-wrap; color:var(--text-body);"></p>
+                        </div>
+                        <h3 style="margin-bottom:12px; font-weight:800; color:var(--text-dark);">Actionable Tips</h3>
+                        <ul class="tips-list" id="li-tips"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">Made with ❤️ to help you land your dream job.</div>
+    </div>
+
+    <script>
+
+        // ══════════════════════════════════════════
+        // THEME TOGGLE
+        // ══════════════════════════════════════════
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = isDark ? '☀️' : '🌙';
+        }
+        
+        // Load theme on startup
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+
+        // Add switchMode logic for linkedin
+        const originalSwitchMode = switchMode;
+        switchMode = function(mode) {
+            originalSwitchMode(mode);
+            document.getElementById('linkedin-mode').style.display = mode === 'linkedin' ? 'block' : 'none';
+            document.getElementById('tab-linkedin').classList.toggle('active', mode === 'linkedin');
+        }
+        
+        // ══════════════════════════════════════════
+        // NEW FEATURES
+        // ══════════════════════════════════════════
+        async function generateCoverLetter() {
+            const btn = document.getElementById('btn-cover-letter');
+            btn.textContent = 'Generating...';
+            btn.disabled = true;
+            try {
+                const formData = new FormData(document.getElementById('analyze-form'));
+                const token = localStorage.getItem('access_token');
+                const headers = {};
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                
+                const res = await fetch('/api/generate-cover-letter', { method: 'POST', body: formData, headers: headers });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('cover-letter-card').style.display = 'block';
+                    document.getElementById('cover-letter-text').value = data.cover_letter;
+                } else {
+                    alert(data.detail);
+                }
+            } catch(e) {
+                alert('Error generating cover letter');
+            }
+            btn.textContent = '✉️ Generate Cover Letter';
+            btn.disabled = false;
+        }
+
+        function exportResume() {
+            const text = prompt("Paste the text you want to export to PDF (or your updated resume text):");
+            if (!text) return;
+            
+            const token = localStorage.getItem('access_token');
+            fetch('/api/export-resume', {
+                method: 'POST',
+                headers: {
+                    'Authorization': token ? 'Bearer ' + token : '',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({'resume_content': text})
+            }).then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'resume.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
+        }
+
+        document.getElementById('linkedin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const role = document.getElementById('li-role').value;
+            const text = document.getElementById('li-text').value;
+            
+            const loader = document.getElementById('li-loader');
+            const btn = document.getElementById('li-submit-btn');
+            btn.style.display = 'none';
+            loader.classList.add('active');
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                
+                const res = await fetch('/api/linkedin-optimize', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ profile_text: text, target_role: role })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('li-headline').textContent = data.headline_suggestion;
+                    document.getElementById('li-about').textContent = data.summary_suggestion;
+                    document.getElementById('li-tips').innerHTML = data.tips.map(t => `<li>${t}</li>`).join('');
+                    document.getElementById('li-results').style.display = 'block';
+                } else {
+                    alert(data.detail);
+                }
+            } catch(e) {
+                alert('Error');
+            }
+            loader.classList.remove('active');
+            btn.style.display = 'block';
+        });
+
+        // ══════════════════════════════════════════
+        // MODE SWITCHING
+        // ══════════════════════════════════════════
+        function switchMode(mode) {
+            document.getElementById('single-mode').style.display = mode === 'single' ? 'block' : 'none';
+            document.getElementById('compare-mode').style.display = mode === 'compare' ? 'block' : 'none';
+            document.getElementById('tab-single').classList.toggle('active', mode === 'single');
+            document.getElementById('tab-compare').classList.toggle('active', mode === 'compare');
+        }
+
+        // ══════════════════════════════════════════
+        // DRAG & DROP (single mode)
+        // ══════════════════════════════════════════
+        function setupUploadZone(areaId, inputId, nameId) {
+            const area = document.getElementById(areaId);
+            const input = document.getElementById(inputId);
+            const nameEl = document.getElementById(nameId);
+
+            ['dragenter', 'dragover'].forEach(evt => {
+                area.addEventListener(evt, (e) => { e.preventDefault(); area.classList.add('dragover'); });
+            });
+            ['dragleave', 'drop'].forEach(evt => {
+                area.addEventListener(evt, (e) => { e.preventDefault(); area.classList.remove('dragover'); });
+            });
+            area.addEventListener('drop', (e) => {
+                if (e.dataTransfer.files.length > 0) {
+                    input.files = e.dataTransfer.files;
+                    showFile(nameEl, area, e.dataTransfer.files[0].name);
+                }
+            });
+            input.addEventListener('change', () => {
+                if (input.files.length > 0) showFile(nameEl, area, input.files[0].name);
+            });
+        }
+
+        function showFile(nameEl, area, name) {
+            nameEl.textContent = '✅ ' + name;
+            nameEl.classList.add('visible');
+            area.classList.add('has-file');
+        }
+
+        setupUploadZone('upload-area', 'resume', 'upload-file-name');
+        setupUploadZone('upload-area-compare', 'resume-compare', 'upload-file-name-compare');
+
+        
+        document.getElementById('btn-fetch-jd').addEventListener('click', async () => {
+            const url = document.getElementById('jd_url').value;
+            if (!url) {
+                alert('Please enter a URL first.');
+                return;
+            }
+            const btn = document.getElementById('btn-fetch-jd');
+            const originalText = btn.textContent;
+            btn.textContent = 'Fetching...';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/scrape-jd', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url})
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Failed to fetch URL');
+                }
+                
+                const data = await response.json();
+                document.getElementById('job_description').value = data.text;
+                alert('Job description fetched successfully!');
+            } catch (e) {
+                alert('Error fetching JD: ' + e.message + '. Please paste manually.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // ══════════════════════════════════════════
+        // SINGLE ANALYSIS
+        // ══════════════════════════════════════════
+        document.getElementById('analyze-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const loader = document.getElementById('loader');
+            const submitBtn = document.getElementById('submit-btn');
+            const placeholder = document.getElementById('placeholder-card');
+            const resultsCol = document.getElementById('results-col');
+
+            submitBtn.disabled = true;
+            submitBtn.style.display = 'none';
+            loader.classList.add('active');
+            resultsCol.classList.remove('visible');
+            placeholder.style.display = '';
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = {};
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                
+                const response = await fetch('/analyze', { method: 'POST', body: formData, headers: headers });
+                if (response.status === 401) {
+                    alert('Your session has expired or you are not logged in. Redirecting to login...');
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+                const score = data.match_score;
+
+                // ── Gauge ──
+                const circumference = 2 * Math.PI * 50;
+                const dash = (score / 100) * circumference;
+                document.getElementById('score-circle').setAttribute('stroke-dasharray', `${dash} ${circumference}`);
+
+                const grad = document.getElementById('scoreGrad');
+                const faceEl = document.getElementById('score-face');
+                if (score >= 80) {
+                    grad.children[0].setAttribute('stop-color', '#10b981');
+                    grad.children[1].setAttribute('stop-color', '#6ee7b7');
+                    faceEl.textContent = '🤩';
+                } else if (score >= 60) {
+                    grad.children[0].setAttribute('stop-color', '#f59e0b');
+                    grad.children[1].setAttribute('stop-color', '#fbbf24');
+                    faceEl.textContent = '😊';
+                } else if (score >= 40) {
+                    grad.children[0].setAttribute('stop-color', '#ff6b6b');
+                    grad.children[1].setAttribute('stop-color', '#fca5a5');
+                    faceEl.textContent = '😐';
+                } else {
+                    grad.children[0].setAttribute('stop-color', '#ef4444');
+                    grad.children[1].setAttribute('stop-color', '#f87171');
+                    faceEl.textContent = '😟';
+                }
+
+                document.getElementById('total-score').textContent = `${score}%`;
+
+                // ── Sub scores ──
+                document.getElementById('skill-score').textContent = `${data.skill_score}%`;
+                document.getElementById('exp-score').textContent = `${data.experience_score}%`;
+                document.getElementById('edu-score').textContent = `${data.education_score}%`;
+                document.getElementById('skill-bar').style.width = `${data.skill_score}%`;
+                document.getElementById('exp-bar').style.width = `${data.experience_score}%`;
+                document.getElementById('edu-bar').style.width = `${data.education_score}%`;
+
+                // ── ATS Score ──
+                if (data.ats_score !== null && data.ats_score !== undefined) {
+                    const atsCard = document.getElementById('ats-card');
+                    atsCard.style.display = 'block';
+
+                    const atsBadge = document.getElementById('ats-badge');
+                    atsBadge.textContent = Math.round(data.ats_score);
+                    atsBadge.className = 'ats-score-badge ' +
+                        (data.ats_score >= 80 ? 'good' : data.ats_score >= 50 ? 'ok' : 'bad');
+
+                    const atsTitle = document.getElementById('ats-title');
+                    if (data.ats_score >= 80) atsTitle.textContent = 'Great! Your resume is ATS-friendly 🎉';
+                    else if (data.ats_score >= 50) atsTitle.textContent = 'Decent, but some improvements needed';
+                    else atsTitle.textContent = 'Needs work — ATS bots may struggle';
+
+                    const checksList = document.getElementById('ats-checks-list');
+                    checksList.innerHTML = (data.ats_checks || []).map(check => `
+                        <li class="ats-check-item">
+                            <div class="ats-check-icon ${check.passed ? 'pass' : 'fail'}">
+                                ${check.passed ? '✓' : '✗'}
+                            </div>
+                            <div>
+                                <div class="ats-check-name">${check.name}</div>
+                                <div class="ats-check-detail">${check.detail}</div>
+                            </div>
+                        </li>
+                    `).join('');
+                }
+
+                // ── Skills ──
+                document.getElementById('matched-skills').innerHTML = data.matched_skills.length
+                    ? data.matched_skills.map(s => `<span class="pill match">${s}</span>`).join('')
+                    : '<span class="no-items">No skills matched yet.</span>';
+
+                document.getElementById('missing-skills').innerHTML = data.missing_skills.length
+                    ? data.missing_skills.map(s => `<span class="pill miss">${s}</span>`).join('')
+                    : '<span class="no-items">None — you nailed it! 🎉</span>';
+
+                // ── Suggestions ──
+                document.getElementById('suggestions').innerHTML =
+                    data.suggestions.map(s => `<li>${s}</li>`).join('');
+
+
+                // ── AI Interview Questions ──
+                const interviewCard = document.getElementById('interview-card');
+                if (data.interview_questions && data.interview_questions.length) {
+                    interviewCard.style.display = 'block';
+                    document.getElementById('interview-list').innerHTML =
+                        data.interview_questions.map(q => `<li>• ${q}</li>`).join('');
+                } else {
+                    interviewCard.style.display = 'none';
+                }
+
+                
+                // ── Red Flags ──
+                const redFlagsCard = document.getElementById('red-flags-card');
+                if (data.red_flags && data.red_flags.length) {
+                    redFlagsCard.style.display = 'block';
+                    document.getElementById('red-flags-list').innerHTML =
+                        data.red_flags.map(f => `<li><strong>"${f.phrase}"</strong>: ${f.warning}</li>`).join('');
+                } else {
+                    redFlagsCard.style.display = 'none';
+                }
+
+                // ── AI Rewrite Suggestions ──
+                const rewriteCard = document.getElementById('rewrite-card');
+                if (data.rewrite_suggestions && data.rewrite_suggestions.length) {
+                    rewriteCard.style.display = 'block';
+                    document.getElementById('rewrite-list').innerHTML =
+                        data.rewrite_suggestions.map(s => `<li>• ${s}</li>`).join('');
+                } else {
+                    rewriteCard.style.display = 'none';
+                }
+
+                // ── LLM Summary ──
+                const llmCard = document.getElementById('llm-summary-container');
+                if (data.llm_summary) {
+                    document.getElementById('llm-summary').textContent = data.llm_summary;
+                    llmCard.classList.add('visible');
+                } else {
+                    llmCard.classList.remove('visible');
+                }
+
+                // Show results
+                placeholder.style.display = 'none';
+                resultsCol.classList.add('visible');
+
+                setTimeout(() => {
+                    document.getElementById('score-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+
+            } catch (error) {
+                alert('Oops! Something went wrong: ' + error.message);
+            } finally {
+                loader.classList.remove('active');
+                submitBtn.disabled = false;
+                submitBtn.style.display = 'block';
+            }
+        });
+
+        // ══════════════════════════════════════════
+        // COMPARE MODE — Add / Remove JDs
+        // ══════════════════════════════════════════
+        let jdCount = 2;
+
+        function addJD() {
+            if (jdCount >= 5) { alert("Maximum 5 job descriptions."); return; }
+            jdCount++;
+            const container = document.getElementById('jd-entries-container');
+            const entry = document.createElement('div');
+            entry.className = 'jd-entry';
+            entry.setAttribute('data-index', jdCount - 1);
+            entry.innerHTML = `
+                <button type="button" class="btn-remove-jd" onclick="removeJD(this)" title="Remove">×</button>
+                <label class="jd-entry-label">🏢 Job ${jdCount} — Title</label>
+                <input type="text" class="jd-entry-input jd-title" placeholder="e.g. Data Engineer at Netflix" value="">
+                <textarea class="textarea jd-text" placeholder="Paste the job description…"></textarea>
+            `;
+            container.appendChild(entry);
+        }
+
+        function removeJD(btn) {
+            const entries = document.querySelectorAll('.jd-entry');
+            if (entries.length <= 2) { alert("You need at least 2 jobs to compare."); return; }
+            btn.closest('.jd-entry').remove();
+            jdCount--;
+            // Re-label
+            document.querySelectorAll('.jd-entry').forEach((entry, i) => {
+                entry.querySelector('.jd-entry-label').textContent = `🏢 Job ${i + 1} — Title`;
+            });
+        }
+
+        // ══════════════════════════════════════════
+        // COMPARE MODE — Submit
+        // ══════════════════════════════════════════
+        document.getElementById('compare-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('resume-compare');
+            if (!fileInput.files.length) { alert("Please upload your resume first."); return; }
+
+            // Gather JD entries
+            const entries = document.querySelectorAll('.jd-entry');
+            const jdList = [];
+            entries.forEach((entry, i) => {
+                const title = entry.querySelector('.jd-title').value.trim() || `Job ${i + 1}`;
+                const text = entry.querySelector('.jd-text').value.trim();
+                if (text) jdList.push({ label: title, job_description: text });
+            });
+
+            if (jdList.length < 2) { alert("Please fill in at least 2 job descriptions."); return; }
+
+            const formData = new FormData();
+            formData.append('resume', fileInput.files[0]);
+            formData.append('job_descriptions', JSON.stringify(jdList));
+
+            const loader = document.getElementById('compare-loader');
+            const submitBtn = document.getElementById('compare-submit-btn');
+            const resultsDiv = document.getElementById('compare-results');
+
+            submitBtn.disabled = true;
+            submitBtn.style.display = 'none';
+            loader.classList.add('active');
+            resultsDiv.classList.remove('visible');
+
+            try {
+                const token = localStorage.getItem('access_token');
+                const headers = {};
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+
+                const response = await fetch('/compare', { method: 'POST', body: formData, headers: headers });
+                if (response.status === 401) {
+                    alert('Your session has expired or you are not logged in. Redirecting to login...');
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+
+                // Build table
+                const tbody = document.getElementById('compare-table-body');
+                tbody.innerHTML = data.results.map((r, i) => {
+                    const rankClass = i < 3 ? `rank-${i + 1}` : '';
+                    const scoreColor = r.match_score >= 80 ? '#059669' : r.match_score >= 60 ? '#d97706' : '#dc2626';
+                    return `
+                        <tr>
+                            <td><span class="rank-badge ${rankClass}">${i + 1}</span></td>
+                            <td style="font-weight:700; color:var(--text-dark);">${r.label}</td>
+                            <td><span class="compare-score" style="color:${scoreColor}">${r.match_score}%</span></td>
+                            <td>${r.skill_score}%</td>
+                            <td>${r.experience_score}%</td>
+                            <td>${r.education_score}%</td>
+                            <td>
+                                <div class="compare-skills-pills">
+                                    ${r.matched_skills.slice(0, 3).map(s => `<span class="mini-pill match">${s}</span>`).join('')}
+                                    ${r.matched_skills.length > 3 ? `<span class="mini-pill match">+${r.matched_skills.length - 3}</span>` : ''}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="compare-skills-pills">
+                                    ${r.missing_skills.slice(0, 3).map(s => `<span class="mini-pill miss">${s}</span>`).join('')}
+                                    ${r.missing_skills.length > 3 ? `<span class="mini-pill miss">+${r.missing_skills.length - 3}</span>` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                resultsDiv.classList.add('visible');
+                setTimeout(() => {
+                    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 150);
+
+            } catch (error) {
+                alert('Oops! Something went wrong: ' + error.message);
+            } finally {
+                loader.classList.remove('active');
+                submitBtn.disabled = false;
+                submitBtn.style.display = 'block';
+            }
+        });
+
+        // ══════════════════════════════════════════
+        // AUTHENTICATION LOGIC
+        // ══════════════════════════════════════════
+        function logout() {
+            localStorage.removeItem('access_token');
+            document.cookie = "access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
