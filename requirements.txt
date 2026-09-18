@@ -10,8 +10,6 @@ jinja2
 fpdf2
 langdetect
 sqlalchemy
-sentence-transformers
-scikit-learn
 pytesseract
 Pillow
 pdf2image
